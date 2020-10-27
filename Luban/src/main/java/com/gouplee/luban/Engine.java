@@ -1,0 +1,86 @@
+package com.gouplee.luban;
+
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+
+/**
+ * author gouplee
+ * date 2020/10/24 14:56
+ * remarks
+ */
+
+class Engine {
+    private InputStreamProvider srcImg;
+    private File tagImg;
+    private boolean focusAlpha;
+    private int srcWidth;
+    private int srcHeight;
+
+    public Engine(InputStreamProvider srcImg, File tagImg, boolean focusAlpha) throws IOException {
+        this.srcImg = srcImg;
+        this.tagImg = tagImg;
+        this.focusAlpha = focusAlpha;
+
+        BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inJustDecodeBounds = true;
+        options.inSampleSize = 1;
+
+        BitmapFactory.decodeStream(srcImg.open(), null, options);
+        this.srcWidth = options.outWidth;
+        this.srcHeight = options.outHeight;
+    }
+
+    private int computeSize() {
+        srcWidth = srcWidth % 2 == 1 ? srcWidth + 1 : srcWidth;
+        srcHeight = srcHeight % 2 == 1 ? srcHeight + 1 : srcHeight;
+
+        int longSide = Math.max(srcWidth, srcHeight);
+        int shortSide = Math.min(srcWidth, srcHeight);
+
+        float scale = ((float) shortSide / longSide);
+        if (scale <= 1 && scale > 0.5625) {
+            if (longSide < 1664) {
+                return 1;
+            } else if (longSide < 4990) {
+                return 2;
+            } else if (longSide > 4990 && longSide < 10240) {
+                return 4;
+            } else {
+                return longSide / 1280 == 0 ? 1 : longSide / 1280;
+            }
+        } else if (scale <= 0.5625 && scale > 0.5) {
+            return longSide / 1280 == 0 ? 1 : longSide / 1280;
+        } else {
+            return (int) Math.ceil(longSide / (1280.0 / scale));
+        }
+    }
+
+    File compress() throws IOException {
+        BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inSampleSize = computeSize();
+
+        Bitmap tagBitmap = BitmapFactory.decodeStream(srcImg.open(), null, options);
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+
+        // TODO: 2020/10/24  
+//        if (Checker.SINGLE.isJPG(srcImg.open())) {
+//            tagBitmap = rotatingImage(tagBitmap, Checker.SINGLE.getOrientation(srcImg.open()));
+//        }
+        tagBitmap.compress(focusAlpha ? Bitmap.CompressFormat.PNG: Bitmap.CompressFormat.JPEG, 60, stream);
+        tagBitmap.recycle();
+
+        FileOutputStream fos = new FileOutputStream(tagImg);
+        fos.write(stream.toByteArray());
+        fos.flush();
+        fos.close();
+        stream.close();
+        
+        return tagImg;
+    }
+
+}
