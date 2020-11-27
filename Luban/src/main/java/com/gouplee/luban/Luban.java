@@ -1,6 +1,7 @@
 package com.gouplee.luban;
 
 import android.content.Context;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.Looper;
@@ -35,6 +36,7 @@ public class Luban implements Handler.Callback {
     private List<InputStreamProvider> mStreamProviders;
     private OnCompressListener mCompressListener;
     private String mTargetDir;
+    private String mTargetName;
     private int mLeastCompressSize;
     private boolean mFocusAlpha;
     private Handler mHandler;
@@ -43,6 +45,7 @@ public class Luban implements Handler.Callback {
         this.mStreamProviders = builder.mStreamProviders;
         this.mCompressListener = builder.mCompressListener;
         this.mTargetDir = builder.mTargetDir;
+        this.mTargetName = builder.mTargetName;
         this.mLeastCompressSize = builder.mLeastCompressSize;
         this.mFocusAlpha = builder.mFocusAlpha;
 
@@ -96,11 +99,6 @@ public class Luban implements Handler.Callback {
 
         File outFile = getImageCacheFile(context, Checker.SINGLE.extSuffix(path));
 
-        /*if (mRenameListener != null) {
-            String filename = mRenameListener.rename(path.getPath());
-            outFile = getImageCustomFile(context, filename);
-        }*/
-
         result = Checker.SINGLE.needCompress(mLeastCompressSize, path.getPath()) ?
                 new Engine(path, outFile, mFocusAlpha).compress() : new File(path.getPath());
 
@@ -118,9 +116,14 @@ public class Luban implements Handler.Callback {
             }
         }
 
-//        String fileName = System.currentTimeMillis() + (int) (Math.random() * 1000)
-//                + (TextUtils.isEmpty(suffix) ? ".jpg" : suffix);
-        String fileName = "bca.jpg";
+        String fileName;
+        if (TextUtils.isEmpty(mTargetName)) {
+            fileName = System.currentTimeMillis() + (int) (Math.random() * 1000)
+                    + (TextUtils.isEmpty(suffix) ? ".jpg" : suffix);
+        } else {
+            fileName = mTargetName + (TextUtils.isEmpty(suffix) ? ".jpg" : suffix);
+        }
+
         return new File(targetDirFile, fileName);
     }
 
@@ -171,6 +174,7 @@ public class Luban implements Handler.Callback {
         private List<InputStreamProvider> mStreamProviders;
         private OnCompressListener mCompressListener;
         private String mTargetDir;
+        private String mTargetName;
         private boolean mFocusAlpha;
         private int mLeastCompressSize = 100;
 
@@ -198,6 +202,51 @@ public class Luban implements Handler.Callback {
             return this;
         }
 
+        public Builder load(final String string) {
+            mStreamProviders.add(new InputStreamProvider() {
+                @Override
+                public InputStream open() throws IOException {
+                    return new FileInputStream(string);
+                }
+
+                @Override
+                public String getPath() {
+                    return string;
+                }
+            });
+            return this;
+        }
+
+        public Builder load(final Uri uri) {
+            mStreamProviders.add(new InputStreamProvider() {
+                @Override
+                public InputStream open() throws IOException {
+                    return context.getContentResolver().openInputStream(uri);
+                }
+
+                @Override
+                public String getPath() {
+                    return uri.getPath();
+                }
+            });
+            return this;
+        }
+
+        public <T> Builder load(List<T> list) {
+            for (T src : list) {
+                if (src instanceof String) {
+                    load((String) src);
+                } else if (src instanceof File) {
+                    load((File) src);
+                } else if (src instanceof Uri) {
+                    load((Uri) src);
+                } else {
+                    throw new IllegalArgumentException("Incoming data type exception, it must be String, File, Uri or Bitmap");
+                }
+            }
+            return this;
+        }
+
         public Builder setCompressListener(OnCompressListener listener) {
             this.mCompressListener = listener;
             return this;
@@ -205,6 +254,11 @@ public class Luban implements Handler.Callback {
 
         public Builder setTargetDir(String targetDir) {
             this.mTargetDir = targetDir;
+            return this;
+        }
+
+        public Builder setTargetName(String targetName) {
+            this.mTargetName = targetName;
             return this;
         }
 

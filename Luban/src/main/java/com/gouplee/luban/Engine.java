@@ -2,6 +2,7 @@ package com.gouplee.luban;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -67,10 +68,10 @@ class Engine {
         Bitmap tagBitmap = BitmapFactory.decodeStream(srcImg.open(), null, options);
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
 
-        // TODO: 2020/10/24  
-//        if (Checker.SINGLE.isJPG(srcImg.open())) {
-//            tagBitmap = rotatingImage(tagBitmap, Checker.SINGLE.getOrientation(srcImg.open()));
-//        }
+        if (Checker.SINGLE.isJPG(srcImg.open())) {
+            tagBitmap = rotatingImage(tagBitmap, Checker.SINGLE.getOrientation(srcImg.open()));
+        }
+
         tagBitmap.compress(focusAlpha ? Bitmap.CompressFormat.PNG: Bitmap.CompressFormat.JPEG, 60, stream);
         tagBitmap.recycle();
 
@@ -81,6 +82,14 @@ class Engine {
         stream.close();
         
         return tagImg;
+    }
+
+    private Bitmap rotatingImage(Bitmap bitmap, int angle) {
+        Matrix matrix = new Matrix();
+
+        matrix.postRotate(angle);
+
+        return Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
     }
 
 }

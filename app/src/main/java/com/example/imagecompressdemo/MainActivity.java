@@ -48,11 +48,12 @@ public class MainActivity extends AppCompatActivity {
 //                    }
 //                }).launch();
 
-
         Luban.with(this)
                 .load(file)
                 .setTargetDir(targetDir.getAbsolutePath())
-                .ignoreBy(50)
+                .setTargetName("abcdefgh")
+                .setFocusAlpha(false)
+                .ignoreBy(300)
                 .setCompressListener(new OnCompressListener() {
                     @Override
                     public void onStart() {
@@ -61,13 +62,15 @@ public class MainActivity extends AppCompatActivity {
 
                     @Override
                     public void onSuccess(File file) {
-                        Toast.makeText(MainActivity.this, "路径：" + file.getAbsolutePath(), Toast.LENGTH_SHORT).show();
+
                     }
+
 
                     @Override
                     public void onError(Throwable e) {
                         Toast.makeText(MainActivity.this, "压缩失败", Toast.LENGTH_SHORT).show();
                     }
                 }).launch();
+
     }
 }
